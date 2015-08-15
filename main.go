@@ -17,6 +17,9 @@ const (
 	WHITE       = 'w'
 )
 
+var directions = [...]int{NORT, SOUT, WEST, EAST}
+var board Board
+
 type Move struct {
 	from, to int
 }
@@ -30,12 +33,10 @@ type Board struct {
 	them       byte
 }
 
-var board Board
-
 func InitBoard() {
 	board.moves = make(map[Move]bool)
-	for i := 0; i != len(debugstring); i++ {
-		board.field[i] = debugstring[i]
+	for i := 0; i != len(boardstring); i++ {
+		board.field[i] = boardstring[i]
 	}
 	board.recordcnt = 0
 	board.us = WHITE
@@ -55,9 +56,6 @@ func ToString() (out string) {
 
 /* Returns all legal steps for a figure */
 func GenerateSteps(from int) {
-	//TODO MAKE CONST ARRAY
-	directions := [4]int{NORT, SOUT, WEST, EAST}
-
 	for _, dir := range directions {
 		to := from + dir
 		if board.field[to] == EMPTY {
@@ -68,7 +66,6 @@ func GenerateSteps(from int) {
 }
 
 func Jumps(from int) (jumps []int) {
-	directions := [4]int{NORT, SOUT, WEST, EAST}
 	for _, dir := range directions {
 		onestep := from + dir
 		if board.field[onestep] == BLACK || board.field[onestep] == WHITE {
@@ -192,8 +189,26 @@ func Perft(depth int) (nodes int) {
 	return nodes
 }
 
+func IndexToCoord(index int) (x int, y int) {
+	x = index % 11
+	y = index / 11
+	return
+}
+
+func Divide(depth int) {
+	board.moves = make(map[Move]bool)
+	GenerateMoves()
+	fmt.Println(len(board.moves))
+	for move, _ := range board.moves {
+		MakeMove(move)
+		x, y := IndexToCoord(move.from)
+		x2, y2 := IndexToCoord(move.to)
+		fmt.Println(Perft(depth-1), move, "from: ", x, y, "to: ", x2, y2)
+		UnMakeMove()
+	}
+}
+
 func main() {
 	InitBoard()
-	fmt.Println(ToString())
-	fmt.Println(Perft(7))
+	fmt.Println(Perft(5))
 }
