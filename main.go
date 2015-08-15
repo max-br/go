@@ -6,6 +6,7 @@ import (
 
 const (
 	boardstring = "............ooooobbbb..oooooobbb..ooooooobb..oooooooob..ooooooooo..woooooooo..wwooooooo..wwwoooooo..wwwwooooo............"
+	debugstring = "............ooooobbbb..oooooobob..ooooooobb..ooooooooo..ooooobobo..ooowboboo..ooooooooo..ooooooooo..ooooooooo............"
 	NORT        = -11
 	SOUT        = 11
 	WEST        = -1
@@ -25,20 +26,24 @@ type Board struct {
 	moves      map[Move]bool
 	moverecord [128]Move
 	recordcnt  int
-	movecolor  byte
+	us         byte
+	them       byte
 }
 
-func InitBoard() (board Board) {
+var board Board
+
+func InitBoard() {
 	board.moves = make(map[Move]bool)
-	for i := 0; i != len(boardstring); i++ {
-		board.field[i] = boardstring[i]
+	for i := 0; i != len(debugstring); i++ {
+		board.field[i] = debugstring[i]
 	}
 	board.recordcnt = 0
-	board.movecolor = WHITE
+	board.us = WHITE
+	board.them = BLACK
 	return
 }
 
-func ToString(board Board) (out string) {
+func ToString() (out string) {
 	for i := 0; i != len(boardstring); i++ {
 		if i%11 == 0 && i != 0 {
 			out += string('\n')
@@ -49,7 +54,7 @@ func ToString(board Board) (out string) {
 }
 
 /* Returns all legal steps for a figure */
-func GenerateSteps(board Board, from int) {
+func GenerateSteps(from int) {
 	//TODO MAKE CONST ARRAY
 	directions := [4]int{NORT, SOUT, WEST, EAST}
 
@@ -62,7 +67,7 @@ func GenerateSteps(board Board, from int) {
 	}
 }
 
-func Jumps(board Board, from int) (jumps []int) {
+func Jumps(from int) (jumps []int) {
 	directions := [4]int{NORT, SOUT, WEST, EAST}
 	for _, dir := range directions {
 		onestep := from + dir
@@ -76,46 +81,43 @@ func Jumps(board Board, from int) (jumps []int) {
 	return
 }
 
-func GenerateJumps(board Board, from int, curr int) {
-	for _, to := range Jumps(board, curr) {
+func GenerateJumps(from int, curr int) {
+	for _, to := range Jumps(curr) {
 		move := Move{from, to}
 		if !board.moves[move] {
 			board.moves[move] = true
-			GenerateJumps(board, from, to)
+			GenerateJumps(from, to)
 		}
 	}
 }
 
-func GenerateMoves(board Board) {
+func GenerateMoves() {
 	for i, f := range board.field {
-		if f == board.movecolor {
-			GenerateSteps(board, i)
-			GenerateJumps(board, i, i)
+		if f == board.us {
+			GenerateSteps(i)
+			GenerateJumps(i, i)
 		}
 	}
 }
 
-func SwitchColor(color byte) byte {
-	if color == WHITE {
-		return BLACK
-	}
-	return WHITE
-}
-
-func MakeMove(board Board, move Move) {
+func MakeMove(move Move) {
 	board.field[move.to] = board.field[move.from]
 	board.field[move.from] = EMPTY
 	board.moverecord[board.recordcnt] = move
 	board.recordcnt++
-	board.movecolor = SwitchColor(board.movecolor)
+	tmp := board.us
+	board.us = board.them
+	board.them = tmp
 }
 
-func UnMakeMove(board Board) {
-	move := board.moverecord[board.recordcnt]
+func UnMakeMove() {
 	board.recordcnt--
+	move := board.moverecord[board.recordcnt]
 	board.field[move.from] = board.field[move.to]
 	board.field[move.to] = EMPTY
-	board.movecolor = SwitchColor(board.movecolor)
+	tmp := board.us
+	board.us = board.them
+	board.them = tmp
 }
 
 func Abs(n int) (ret int) {
@@ -126,10 +128,10 @@ func Abs(n int) (ret int) {
 	return
 }
 
-func DistanceToGoal(board Board, sq int) (distance int) {
+func DistanceToGoal(sq int) (distance int) {
 	x, y := sq%11, sq/11
 	goalX, goalY := 0, 0
-	if board.movecolor == WHITE {
+	if board.us == WHITE {
 		goalX, goalY = 9, 1
 	} else {
 		goalX, goalY = 1, 9
@@ -139,28 +141,31 @@ func DistanceToGoal(board Board, sq int) (distance int) {
 	return
 }
 
-func Evaluate(board Board) (score int) {
+func Evaluate() (score int) {
 	for sq, f := range board.field {
-		if f == board.movecolor {
-			score -= DistanceToGoal(board, sq)
+		if f == board.us {
+			score -= DistanceToGoal(sq)
 		}
 	}
 	return
 }
 
-func AlphaBeta(board Board, depth int, alpha int, beta int, bestmove *Move) int {
+var cnt int = 0
+
+func AlphaBeta(depth int, alpha int, beta int, bestmove *Move) int {
+	cnt++
 	if depth == 0 {
-		return Evaluate(board)
+		return Evaluate()
 	}
 
 	board.moves = make(map[Move]bool)
-	GenerateMoves(board)
+	GenerateMoves()
 	val := 0
 
 	for move, _ := range board.moves {
-		MakeMove(board, move)
-		val = -AlphaBeta(board, depth-1, -beta, -alpha, bestmove)
-		UnMakeMove(board)
+		MakeMove(move)
+		val = -AlphaBeta(depth-1, -beta, -alpha, bestmove)
+		UnMakeMove()
 
 		if val >= beta {
 			return beta
@@ -173,10 +178,22 @@ func AlphaBeta(board Board, depth int, alpha int, beta int, bestmove *Move) int 
 	return alpha
 }
 
+func Perft(depth int) (nodes int) {
+	if depth == 0 {
+		return 1
+	}
+	board.moves = make(map[Move]bool)
+	GenerateMoves()
+	for move, _ := range board.moves {
+		MakeMove(move)
+		nodes += Perft(depth - 1)
+		UnMakeMove()
+	}
+	return nodes
+}
+
 func main() {
-	board := InitBoard()
-	fmt.Println(ToString(board))
-	bestmove := Move{}
-	AlphaBeta(board, 10, -100000, 100000, &bestmove)
-	fmt.Println(bestmove)
+	InitBoard()
+	fmt.Println(ToString())
+	fmt.Println(Perft(7))
 }
