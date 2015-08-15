@@ -102,9 +102,7 @@ func MakeMove(move Move) {
 	board.field[move.from] = EMPTY
 	board.moverecord[board.recordcnt] = move
 	board.recordcnt++
-	tmp := board.us
-	board.us = board.them
-	board.them = tmp
+	board.us, board.them = board.them, board.us
 }
 
 func UnMakeMove() {
@@ -112,9 +110,7 @@ func UnMakeMove() {
 	move := board.moverecord[board.recordcnt]
 	board.field[move.from] = board.field[move.to]
 	board.field[move.to] = EMPTY
-	tmp := board.us
-	board.us = board.them
-	board.them = tmp
+	board.us, board.them = board.them, board.us
 }
 
 func Abs(n int) (ret int) {
@@ -125,8 +121,14 @@ func Abs(n int) (ret int) {
 	return
 }
 
+func IndexToCoord(index int) (x int, y int) {
+	x = index % 11
+	y = index / 11
+	return
+}
+
 func DistanceToGoal(sq int) (distance int) {
-	x, y := sq%11, sq/11
+	x, y := IndexToCoord(sq)
 	goalX, goalY := 0, 0
 	if board.us == WHITE {
 		goalX, goalY = 9, 1
@@ -142,6 +144,9 @@ func Evaluate() (score int) {
 	for sq, f := range board.field {
 		if f == board.us {
 			score -= DistanceToGoal(sq)
+		}
+		if f == board.them {
+			score += DistanceToGoal(sq)
 		}
 	}
 	return
@@ -163,7 +168,6 @@ func AlphaBeta(depth int, alpha int, beta int, bestmove *Move) int {
 		MakeMove(move)
 		val = -AlphaBeta(depth-1, -beta, -alpha, bestmove)
 		UnMakeMove()
-
 		if val >= beta {
 			return beta
 		}
@@ -189,12 +193,6 @@ func Perft(depth int) (nodes int) {
 	return nodes
 }
 
-func IndexToCoord(index int) (x int, y int) {
-	x = index % 11
-	y = index / 11
-	return
-}
-
 func Divide(depth int) {
 	board.moves = make(map[Move]bool)
 	GenerateMoves()
@@ -210,5 +208,5 @@ func Divide(depth int) {
 
 func main() {
 	InitBoard()
-	fmt.Println(Perft(5))
+	fmt.Println(Perft(2))
 }
