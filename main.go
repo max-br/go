@@ -1,7 +1,8 @@
-pckage main
+package main
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 var directions = [...]int{NORT, SOUT, WEST, EAST}
 
 type Move struct {
-	from, to int
+	from, to, score int
 }
 
 type Board struct {
@@ -58,7 +59,7 @@ func (board *Board) GenerateSteps(from int, moves map[Move]bool) {
 	for _, dir := range directions {
 		to := from + dir
 		if board.field[to] == EMPTY {
-			move := Move{from, to}
+			move := Move{from, to, 0}
 			moves[move] = true
 		}
 	}
@@ -79,7 +80,7 @@ func (board *Board) Jumps(from int) (jumps []int) {
 
 func (board *Board) GenerateJumps(from int, curr int, moves map[Move]bool) {
 	for _, to := range board.Jumps(curr) {
-		move := Move{from, to}
+		move := Move{from, to, 0}
 		if !moves[move] {
 			moves[move] = true
 			board.GenerateJumps(from, to, moves)
@@ -87,13 +88,18 @@ func (board *Board) GenerateJumps(from int, curr int, moves map[Move]bool) {
 	}
 }
 
-func (board *Board) GenerateMoves(moves map[Move]bool) {
+func (board *Board) GenerateMoves() (moves []Move) {
+	movemap := make(map[Move]bool)
 	for i, f := range board.field {
 		if f == board.us {
-			board.GenerateJumps(i, i, moves)
-			board.GenerateSteps(i, moves)
+			board.GenerateJumps(i, i, movemap)
+			board.GenerateSteps(i, movemap)
 		}
 	}
+	for move, _ := range movemap {
+		moves = append(moves, move)
+	}
+	return
 }
 
 func (board *Board) MakeMove(move Move) {
@@ -162,11 +168,10 @@ func (board *Board) AlphaBeta(depth int, alpha int, beta int) int {
 	if depth == 0 {
 		return board.Evaluate()
 	}
-	moves := make(map[Move]bool)
-	board.GenerateMoves(moves)
+	moves := board.GenerateMoves()
 	val := 0
 
-	for move, _ := range moves {
+	for _, move := range moves {
 		board.MakeMove(move)
 		val = -board.AlphaBeta(depth-1, -beta, -alpha)
 		board.UnMakeMove()
@@ -180,12 +185,53 @@ func (board *Board) AlphaBeta(depth int, alpha int, beta int) int {
 	return alpha
 }
 
-func (board *Board) SearchBestMove(depth int) (bestmove Move) {
-	moves := make(map[Move]bool)
-	board.recordcnt = 0
-	board.GenerateMoves(moves)
+func (board *Board) DoAlphaBeta(i, n int, moves []Move, depth int, c chan int) {
+	for ; i < n; i++ {
+		board.MakeMove(moves[i])
+		moves[i].score = board.AlphaBeta(depth-1, -10000, 10000)
+		board.UnMakeMove()
+	}
+	c <- 1
+}
+
+const nCPU = 4
+
+func (board *Board) SearchBestMovePar(depth int) (bestmove Move) {
+	c := make(chan int, nCPU)
+	var boardcpy Board
+	boardcpy.us = board.us
+	boardcpy.them = board.them
+	moves := boardcpy.GenerateMoves()
+	for i := 0; i < 121; i++ {
+		boardcpy.field[i] = board.field[i]
+	}
+	for i := 0; i < 128; i++ {
+		boardcpy.moverecord[i] = board.moverecord[i]
+	}
+
+	for i := 0; i < nCPU; i++ {
+		go boardcpy.DoAlphaBeta(i*len(moves)/nCPU, (i+1)*len(moves)/nCPU, moves, depth, c)
+	}
+	for i := 0; i < nCPU; i++ {
+		<-c
+	}
 	bestscore := -50000
-	for move, _ := range moves {
+	for _, move := range moves {
+		fmt.Println(move)
+		if move.score > bestscore {
+			bestscore = move.score
+			bestmove = move
+			fmt.Println(move)
+		}
+	}
+	return
+}
+
+func (board *Board) SearchBestMove(depth int) (bestmove Move) {
+	board.recordcnt = 0
+	moves := board.GenerateMoves()
+	bestscore := -50000
+	for _, move := range moves {
 		board.MakeMove(move)
 		score := board.AlphaBeta(depth-1, -10000, 10000)
 		if score > bestscore {
@@ -202,9 +248,8 @@ func (board *Board) Perft(depth int) (nodes int) {
 	if depth == 0 {
 		return 1
 	}
-	moves := make(map[Move]bool)
-	board.GenerateMoves(moves)
-	for move, _ := range moves {
+	moves := board.GenerateMoves()
+	for _, move := range moves {
 		board.MakeMove(move)
 		nodes += board.Perft(depth - 1)
 		board.UnMakeMove()
@@ -213,10 +258,9 @@ func (board *Board) Perft(depth int) (nodes int) {
 }
 
 func (board *Board) Divide(depth int) {
-	moves := make(map[Move]bool)
-	board.GenerateMoves(moves)
+	moves := board.GenerateMoves()
 	fmt.Println(len(moves))
-	for move, _ := range moves {
+	for _, move := range moves {
 		board.MakeMove(move)
 		x, y := IndexToCoord(move.from)
 		x2, y2 := IndexToCoord(move.to)
@@ -229,9 +273,11 @@ func main() {
 	var board Board
 	board.InitBoard()
 	//fmt.Println(board.Perft(5)) // should be 1381888
+
 	for {
-		bm := board.SearchBestMove(5)
+		bm := board.SearchBestMovePar(5)
 		board.MakeMove(bm)
 		fmt.Println(board.ToString())
+		time.Sleep(100 * time.Millisecond)
 	}
 }
