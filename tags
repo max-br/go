@@ -1,0 +1,49 @@
+!_TAG_FILE_FORMAT	2
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted/
+!_TAG_PROGRAM_AUTHOR	Joel Stemmer	/stemmertech@gmail.com/
+!_TAG_PROGRAM_NAME	gotags
+!_TAG_PROGRAM_URL	https://github.com/jstemmer/gotags
+!_TAG_PROGRAM_VERSION	1.3.0	/go1.4.2/
+Abs	main.go	118;"	f	access:public	line:118	signature:(n int)	type:int
+AlphaBeta	main.go	163;"	f	access:public	line:163	signature:(depth int, alpha int, beta int)	type:int
+BLACK	main.go	16;"	c	access:public	line:16
+Board	main.go	27;"	t	access:public	line:27	type:struct
+DistanceTo	main.go	141;"	f	access:public	line:141	signature:(index int, goalX int, goalY int)	type:int
+Divide	main.go	217;"	f	access:public	line:217	signature:(depth int)
+EAST	main.go	13;"	c	access:public	line:13
+EMPTY	main.go	14;"	c	access:public	line:14
+Evaluate	main.go	147;"	f	access:public	line:147	signature:()	type:int
+GenerateJumps	main.go	83;"	f	access:public	line:83	signature:(from int, curr int)
+GenerateMoves	main.go	93;"	f	access:public	line:93	signature:()
+GenerateSteps	main.go	60;"	f	access:public	line:60	signature:(from int)
+Goal	main.go	132;"	f	access:public	line:132	signature:(color byte)	type:int, int
+IndexToCoord	main.go	126;"	f	access:public	line:126	signature:(index int)	type:int, int
+InitBoard	main.go	36;"	f	access:public	line:36	signature:()
+Jumps	main.go	70;"	f	access:public	line:70	signature:(from int)	type:[]int
+MakeMove	main.go	102;"	f	access:public	line:102	signature:(move Move)
+Move	main.go	23;"	t	access:public	line:23	type:struct
+NORT	main.go	10;"	c	access:public	line:10
+OFFBD	main.go	15;"	c	access:public	line:15
+Perft	main.go	203;"	f	access:public	line:203	signature:(depth int)	type:int
+SOUT	main.go	11;"	c	access:public	line:11
+SearchBestMove	main.go	186;"	f	access:public	ctype:Move	line:186	signature:(depth int)	type:Move
+ToString	main.go	47;"	f	access:public	line:47	signature:()	type:string
+UnMakeMove	main.go	110;"	f	access:public	line:110	signature:()
+WEST	main.go	12;"	c	access:public	line:12
+WHITE	main.go	17;"	c	access:public	line:17
+board	main.go	21;"	v	access:private	line:21	type:Board
+boardstring	main.go	8;"	c	access:private	line:8
+cnt	main.go	161;"	v	access:private	line:161	type:int
+debugstring	main.go	9;"	c	access:private	line:9
+directions	main.go	20;"	v	access:private	line:20
+field	main.go	28;"	w	access:private	ctype:Board	line:28	type:[121]byte
+fmt	main.go	4;"	i	line:4
+from	main.go	24;"	w	access:private	ctype:Move	line:24	type:int
+main	main.go	1;"	p	line:1
+main	main.go	230;"	f	access:private	line:230	signature:()
+moverecord	main.go	30;"	w	access:private	ctype:Board	line:30	type:[128]Move
+moves	main.go	29;"	w	access:private	ctype:Board	line:29	type:map[Move]bool
+recordcnt	main.go	31;"	w	access:private	ctype:Board	line:31	type:int
+them	main.go	33;"	w	access:private	ctype:Board	line:33	type:byte
+to	main.go	24;"	w	access:private	ctype:Move	line:24	type:int
+us	main.go	32;"	w	access:private	ctype:Board	line:32	type:byte
