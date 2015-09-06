@@ -1,4 +1,4 @@
-package main
+pckage main
 
 import (
 	"fmt"
@@ -24,8 +24,7 @@ type Move struct {
 }
 
 type Board struct {
-	field [121]byte
-	//moves      map[Move]bool
+	field      [121]byte
 	moverecord [128]Move
 	recordcnt  int
 	us         byte
@@ -33,7 +32,6 @@ type Board struct {
 }
 
 func (board *Board) InitBoard() {
-	//board.moves = make(map[Move]bool)
 	for i := 0; i != len(boardstring); i++ {
 		board.field[i] = boardstring[i]
 	}
@@ -154,7 +152,7 @@ func (board *Board) Evaluate() (score int) {
 			score += DistanceTo(index, goalX, goalY)
 		}
 	}
-	return
+	return -score
 }
 
 var cnt int = 0
@@ -170,7 +168,7 @@ func (board *Board) AlphaBeta(depth int, alpha int, beta int) int {
 
 	for move, _ := range moves {
 		board.MakeMove(move)
-		val = board.AlphaBeta(depth-1, -beta, -alpha)
+		val = -board.AlphaBeta(depth-1, -beta, -alpha)
 		board.UnMakeMove()
 		if val >= beta {
 			return beta
@@ -184,11 +182,12 @@ func (board *Board) AlphaBeta(depth int, alpha int, beta int) int {
 
 func (board *Board) SearchBestMove(depth int) (bestmove Move) {
 	moves := make(map[Move]bool)
+	board.recordcnt = 0
 	board.GenerateMoves(moves)
 	bestscore := -50000
 	for move, _ := range moves {
 		board.MakeMove(move)
-		score := -board.AlphaBeta(depth-1, -10000, 10000)
+		score := board.AlphaBeta(depth-1, -10000, 10000)
 		if score > bestscore {
 			bestmove = move
 			bestscore = score
@@ -229,5 +228,10 @@ func (board *Board) Divide(depth int) {
 func main() {
 	var board Board
 	board.InitBoard()
-	fmt.Println(board.Perft(5)) // should be 1381888
+	//fmt.Println(board.Perft(5)) // should be 1381888
+	for {
+		bm := board.SearchBestMove(5)
+		board.MakeMove(bm)
+		fmt.Println(board.ToString())
+	}
 }
